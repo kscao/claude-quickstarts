@@ -181,3 +181,27 @@ docker run \
 ```
 
 The docker run command above mounts the repo inside the docker image, such that you can edit files from the host. Streamlit is already configured with auto reloading.
+
+## FastAPI + React Setup (Recommended for Local Development)
+
+This is the recommended setup for local development, using FastAPI backend with a React frontend.
+
+### Docker
+
+```bash
+# Build the image
+docker build -f Dockerfile.local -t computer-use-local .
+
+# Run the container
+docker run --env-file .env \
+  -v $(pwd)/computer_use_demo:/home/computeruse/computer_use_demo \
+  -v $(pwd)/frontend/dist:/home/computeruse/frontend/dist \
+  -v ~/Downloads/shared:/home/computeruse/shared \
+  -p 8000:8000 -p 6080:6080 \
+  computer-use-local
+```
+
+> **Note:** The `~/Downloads/shared` folder on your local machine is mounted to `/home/computeruse/shared` in the VM. Claude can access files placed there.
+> Ask Claude: "List the files in /home/computeruse/shared"
+
+Open http://localhost:8000
