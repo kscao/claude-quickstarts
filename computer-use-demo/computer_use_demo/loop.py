@@ -256,9 +256,20 @@ def _response_to_params(
                 if hasattr(block, "signature"):
                     thinking_block["signature"] = getattr(block, "signature", None)
                 res.append(cast(BetaContentBlockParam, thinking_block))
-        else:
-            # Handle tool use blocks normally
-            res.append(cast(BetaToolUseBlockParam, block.model_dump()))
+        elif getattr(block, "type", None) == "tool_use":
+            # Handle tool use blocks - only include fields accepted by the API
+            # (excludes extra fields like 'caller' that the API returns but doesn't accept)
+            res.append(
+                cast(
+                    BetaToolUseBlockParam,
+                    {
+                        "type": "tool_use",
+                        "id": getattr(block, "id", None),
+                        "name": getattr(block, "name", None),
+                        "input": getattr(block, "input", {}),
+                    },
+                )
+            )
     return res
 
 
