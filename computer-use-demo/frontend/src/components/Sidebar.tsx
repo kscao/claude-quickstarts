@@ -119,18 +119,33 @@ export function Sidebar({
 
           <Separator />
 
-          {/* Model Input */}
+          {/* Model Selection */}
           <div className="space-y-2">
             <Label htmlFor="model" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Model
             </Label>
-            <Input
-              id="model"
+            <Select
               value={config.model}
-              onChange={(e) => onConfigChange({ model: e.target.value })}
-              placeholder="claude-sonnet-4-5-20250929"
-              className="text-sm"
-            />
+              onValueChange={(value) => {
+                const mc = serverConfig?.model_configs[value];
+                onConfigChange({
+                  model: value,
+                  toolVersion: mc?.tool_version || config.toolVersion,
+                  maxTokens: mc?.default_output_tokens || config.maxTokens,
+                });
+              }}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="Select a model" />
+              </SelectTrigger>
+              <SelectContent>
+                {serverConfig?.model_configs && Object.keys(serverConfig.model_configs).map((modelName) => (
+                  <SelectItem key={modelName} value={modelName} className="text-sm font-mono">
+                    {modelName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* API Key (only for Anthropic) */}

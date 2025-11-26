@@ -118,10 +118,22 @@ async def _stream_chat(request: ChatRequest) -> AsyncGenerator[dict[str, Any], N
         error: Exception | None,
     ):
         """Called for each API request/response."""
+        # Try to extract request body/payload
+        request_body = None
+        try:
+            if request_obj.content:
+                body_bytes = request_obj.content
+                if isinstance(body_bytes, bytes):
+                    body_str = body_bytes.decode("utf-8")
+                    request_body = json.loads(body_str)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pass  # Skip if not valid JSON
+
         log_data: dict[str, Any] = {
             "request": {
                 "method": str(request_obj.method),
                 "url": str(request_obj.url),
+                "body": request_body,
             },
         }
 

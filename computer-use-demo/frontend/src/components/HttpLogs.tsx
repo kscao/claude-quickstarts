@@ -5,7 +5,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { ChevronDown, Globe, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Globe, AlertCircle, Code2 } from 'lucide-react';
 import type { HttpLogEntry } from '@/types';
 import { useState } from 'react';
 
@@ -15,6 +15,7 @@ interface HttpLogsProps {
 
 export function HttpLogs({ logs }: HttpLogsProps) {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const [expandedPayloads, setExpandedPayloads] = useState<Set<string>>(new Set());
 
   const toggleItem = (id: string) => {
     setOpenItems((prev) => {
@@ -26,6 +27,53 @@ export function HttpLogs({ logs }: HttpLogsProps) {
       }
       return next;
     });
+  };
+
+  const togglePayload = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedPayloads((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const formatPayload = (body: Record<string, unknown>) => {
+    // Create a sanitized copy that truncates large values
+    const sanitized = sanitizePayload(body);
+    return JSON.stringify(sanitized, null, 2);
+  };
+
+  const sanitizePayload = (obj: unknown, depth = 0): unknown => {
+    if (depth > 5) return '[nested...]';
+
+    if (Array.isArray(obj)) {
+      if (obj.length > 10) {
+        return [...obj.slice(0, 10).map(item => sanitizePayload(item, depth + 1)), `... and ${obj.length - 10} more items`];
+      }
+      return obj.map(item => sanitizePayload(item, depth + 1));
+    }
+
+    if (obj && typeof obj === 'object') {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        // Truncate base64 images
+        if (key === 'data' && typeof value === 'string' && value.length > 100) {
+          result[key] = `${value.slice(0, 50)}... [${value.length} chars]`;
+        } else if (typeof value === 'string' && value.length > 500) {
+          result[key] = `${value.slice(0, 200)}... [${value.length} chars]`;
+        } else {
+          result[key] = sanitizePayload(value, depth + 1);
+        }
+      }
+      return result;
+    }
+
+    return obj;
   };
 
   const getStatusColor = (statusCode?: number) => {
@@ -94,6 +142,33 @@ export function HttpLogs({ logs }: HttpLogsProps) {
                     {log.request.method} {log.request.url}
                   </div>
                 </div>
+
+                {/* Expandable Payload Section */}
+                {log.request.body && (
+                  <div className="border-t border-border/50 pt-3">
+                    <button
+                      onClick={(e) => togglePayload(log.id, e)}
+                      className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors w-full text-left"
+                    >
+                      {expandedPayloads.has(log.id) ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                      <Code2 className="h-3 w-3" />
+                      <span>Request Payload</span>
+                      <span className="text-[10px] font-normal normal-case ml-1 opacity-60">
+                        ({Object.keys(log.request.body).length} fields)
+                      </span>
+                    </button>
+                    {expandedPayloads.has(log.id) && (
+                      <pre className="mt-2 p-3 rounded bg-background/80 border border-border/30 text-xs overflow-x-auto max-h-96 overflow-y-auto">
+                        <code className="text-foreground/90">{formatPayload(log.request.body)}</code>
+                      </pre>
+                    )}
+                  </div>
+                )}
+
                 {log.response && (
                   <div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">

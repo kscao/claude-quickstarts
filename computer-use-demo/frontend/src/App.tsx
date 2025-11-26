@@ -8,8 +8,32 @@ import { useChat } from '@/hooks/useChat';
 import { fetchConfig, validateAuth, resetEnvironment, fetchStoredApiKey } from '@/lib/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Globe, AlertTriangle, Loader2, PanelRightClose, PanelRight } from 'lucide-react';
+import { MessageSquare, Globe, AlertTriangle, Loader2, PanelRightClose, PanelRight, Sun, Moon } from 'lucide-react';
 import type { ApiKeyResponse, AppConfig, ConfigResponse } from '@/types';
+
+type Theme = 'light' | 'dark';
+
+function useTheme() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('theme') as Theme | null;
+      if (stored) return stored;
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+
+  return { theme, toggleTheme };
+}
 
 const DEFAULT_CONFIG: AppConfig = {
   provider: 'anthropic',
@@ -37,6 +61,7 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [vncCollapsed, setVncCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  const { theme, toggleTheme } = useTheme();
 
   const { messages, httpLogs, isStreaming, sendMessage, stop, clearMessages } = useChat({
     config,
@@ -143,24 +168,39 @@ function App() {
           <h1 className="text-xl font-bold tracking-tight">
             Claude Computer Use Demo
           </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setVncCollapsed(!vncCollapsed)}
-            className="gap-2"
-          >
-            {vncCollapsed ? (
-              <>
-                <PanelRight className="h-4 w-4" />
-                Show Desktop
-              </>
-            ) : (
-              <>
-                <PanelRightClose className="h-4 w-4" />
-                Hide Desktop
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="h-9 w-9"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setVncCollapsed(!vncCollapsed)}
+              className="gap-2"
+            >
+              {vncCollapsed ? (
+                <>
+                  <PanelRight className="h-4 w-4" />
+                  Show Desktop
+                </>
+              ) : (
+                <>
+                  <PanelRightClose className="h-4 w-4" />
+                  Hide Desktop
+                </>
+              )}
+            </Button>
+          </div>
         </header>
 
         {/* Content Area */}

@@ -96,6 +96,7 @@ export interface SSEHttpLogEvent {
   request: {
     method: string;
     url: string;
+    body?: Record<string, unknown>;
   };
   response?: {
     status_code: number;
@@ -133,6 +134,7 @@ export interface HttpLogEntry {
   request: {
     method: string;
     url: string;
+    body?: Record<string, unknown>;
   };
   response?: {
     status_code: number;
